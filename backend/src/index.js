@@ -20,10 +20,15 @@ const __dirname=path.resolve();
 
 
 
-app.use(cors({
-    origin:"http://localhost:5173",
-    credentials:true,
-}))
+
+const corsOptions = {
+  origin: 'https://chat-app-7i55.vercel.app', // Allow only your frontend origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // If you're sending cookies/tokens
+  optionsSuccessStatus: 204 // For preflight requests
+};
+
+app.use(cors(corsOptions));
 
 app.use(cookieParser());
 
