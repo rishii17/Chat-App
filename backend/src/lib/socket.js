@@ -1,39 +1,64 @@
 import { Server } from "socket.io";
 import http from "http";
+import express from "express";
+import dotenv from "dotenv"; // Ensure dotenv is imported and configured
 
-import express from "express"
+dotenv.config(); // Add dotenv config here for safety, if not guaranteed by index.js loading order
 
-const app=express();
-const server=http.createServer(app);
+const app = express();
+const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: process.env.NODE_ENV === "production"
-      ? "https://chat-app-7i55.vercel.app/" 
-      : "http://localhost:5173",
-    credentials: true,
-  },
+    cors: {
+        origin: process.env.NODE_ENV === "production"
+            ? "https://chat-app-7i55.vercel.app" // Corrected: Removed trailing slash
+            : "http://localhost:5173",
+        credentials: true, // Correct: This is essential and now included
+        methods: ["GET", "POST"] // Optional: Explicitly list methods for clarity
+    },
 });
 
-export function getReceiverSocketId(userId){
+// Map to store userId to socketId
+const userSocketMap = {}; // { userId: socketId }
+
+// Function to get the socket ID for a given user ID
+export function getReceiverSocketId(userId) {
     return userSocketMap[userId];
 }
 
-const userSocketMap={};
+io.on("connection", (socket) => {
+    console.log("A user connected:", socket.id);
 
-io.on("connection",(socket)=>{
-    console.log("A user connected",socket.id);
+    const userId = socket.handshake.query.userId;
+    if (userId) {
+        userSocketMap[userId] = socket.id; // CORRECTED: Store socket.id, NOT socket.io
+        console.log(`User ${userId} mapped to socket ${socket.id}`);
+    } else {
+        console.warn("User connected without userId in handshake query. Socket ID:", socket.id);
+    }
 
-    const userId=socket.handshake.query.userId;
-    if(userId) userSocketMap[userId]=socket.io;
+    // Emit online users to all connected clients
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    console.log("Current online users:", Object.keys(userSocketMap));
 
-    io.emit("getOnlineUsers",Object.keys(userSocketMap));
+    socket.on("disconnect", () => {
+        console.log("A user disconnected:", socket.id);
+        // Find the user ID associated with the disconnected socket ID
+        const disconnectedUserId = Object.keys(userSocketMap).find(
+            (key) => userSocketMap[key] === socket.id
+        );
 
-    socket.on("disconnect",()=>{
-        console.log("A user disconnected",socket.id);
-        delete userSocketMap[userId];
-        io.emit("getOnlineUsers",Object.keys(userSocketMap));
+        if (disconnectedUserId) {
+            delete userSocketMap[disconnectedUserId];
+            console.log(`User ${disconnectedUserId} disconnected. Removed from map.`);
+        } else {
+            console.log(`Socket ${socket.id} disconnected, but no user ID found in map.`);
+        }
+
+        // Emit updated online users to all clients
+        io.emit("getOnlineUsers", Object.keys(userSocketMap));
+        console.log("Updated online users:", Object.keys(userSocketMap));
     });
-
 });
-export {io,app,server};
+
+export { io, app, server };
