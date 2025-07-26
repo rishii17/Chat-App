@@ -11,10 +11,10 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: process.env.NODE_ENV === "production"
-            ? "https://chat-app-7i55.vercel.app" // Corrected: Removed trailing slash
+            ? 'https://chat-app-7i55.vercel.app' // Make sure this matches EXACTLY
             : "http://localhost:5173",
-        credentials: true, // Correct: This is essential and now included
-        methods: ["GET", "POST"] // Optional: Explicitly list methods for clarity
+        credentials: true,
+        methods: ["GET", "POST"] // Methods needed for handshake
     },
 });
 
