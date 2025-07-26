@@ -18,14 +18,16 @@ const PORT=process.env.PORT
 
 
 
-const corsOptions = {
-  origin: 'https://chat-app-7i55.vercel.app', // Allow only your frontend origin
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, // If you're sending cookies/tokens
-  optionsSuccessStatus: 204 // For preflight requests
-};
+app.use(cors({
+    origin: process.env.NODE_ENV === "production"
+        ? 'https://chat-app-7i55.vercel.app' // Make sure this matches EXACTLY
+        : 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Include OPTIONS for preflight
+    allowedHeaders: ['Content-Type', 'Authorization'], // Any custom headers you send
+}));
 
-app.use(cors(corsOptions));
+
 app.use(express.json());
 
 app.use(cookieParser());
